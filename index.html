@@ -3,524 +3,266 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Recipe Database</title>
+    <title>Fantasy Food Gallery</title>
+    <!-- Memuat Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <!-- Menggunakan versi UMD spesifik untuk memastikan variabel global 'lucide' tersedia -->
-    <script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#4f46e5', // Indigo
+                        'secondary': '#10b981', // Emerald
+                        'background': '#f8fafc', // Slate 50
+                        'card-bg': '#ffffff',
+                    }
+                }
+            }
+        }
+    </script>
     <style>
+        /* Custom font for a more fantasy/game feel */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body {
-            font-family: 'Nunito', sans-serif;
-            background-color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
         }
-        .card-hover:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        /* Style untuk efek hover pada card */
+        .food-card {
+            transition: transform 0.2s, box-shadow 0.2s;
         }
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
+        .food-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
         }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
-        .rarity-rare {
-            background-color: #ede9fe;
-            color: #7c3aed;
-            border: 1px solid #ddd6fe;
-        }
-        .rarity-epic {
-            background-color: #ffedd5;
-            color: #ea580c;
-            border: 1px solid #fed7aa;
-        }
-        .rarity-delicious {
-            background-color: #dbeafe;
-            color: #2563eb;
-            border: 1px solid #bfdbfe;
+        /* Style untuk modal */
+        .modal-content-wrapper {
+             /* Mengaktifkan scroll pada modal jika konten terlalu besar */
+            max-height: 90vh; 
+            overflow-y: auto;
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800">
+<body class="min-h-screen p-4 sm:p-8">
 
-    <!-- Navbar / Header -->
-    <div class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="chef-hat" class="w-8 h-8 text-orange-500"></i>
-                    <h1 class="text-2xl font-extrabold text-slate-800 tracking-tight">Recipe<span class="text-orange-500">Dex</span></h1>
-                </div>
-                
-                <!-- Search Bar -->
-                <div class="relative w-full md:w-96">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i data-lucide="search" class="w-5 h-5 text-slate-400"></i>
-                    </div>
-                    <input type="text" id="searchInput" 
-                        class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-xl leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition duration-150 ease-in-out sm:text-sm"
-                        placeholder="Cari resep (e.g. Seafood, Meat)...">
-                </div>
+    <div class="max-w-7xl mx-auto">
+        <header class="text-center mb-10 p-4 bg-white rounded-xl shadow-lg">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-primary mb-2">
+                Fantasy Food Recipe Index
+            </h1>
+            <p class="text-gray-500">Kumpulan makanan dari dunia fantasi. Cari item di bawah!</p>
+        </header>
+
+        <!-- Search Input -->
+        <div class="mb-8">
+            <input type="text" id="searchInput" placeholder="Cari nama makanan..."
+                   class="w-full p-4 border border-gray-300 rounded-xl shadow-inner focus:ring-2 focus:ring-primary focus:border-primary transition duration-150 text-lg">
+        </div>
+
+        <!-- Food Card Gallery -->
+        <div id="foodGallery" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            <!-- Cards akan di-generate oleh JavaScript di sini -->
+            <div class="col-span-full text-center py-10 text-gray-500" id="noResults" style="display: none;">
+                <p class="text-xl font-semibold">Tidak ditemukan hasil untuk pencarian Anda.</p>
+                <p>Coba kata kunci lain.</p>
             </div>
         </div>
     </div>
-
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        <!-- Stats / Filter Info -->
-        <div class="mb-6 flex items-center justify-between">
-            <p class="text-slate-500 text-sm">Menampilkan <span id="count" class="font-bold text-slate-800">0</span> resep</p>
-            <div class="flex gap-2">
-                <!-- Placeholder for future filters if needed -->
+    
+    <!-- Modal untuk Zoom Gambar (Akan ditampilkan saat tombol detail diklik) -->
+    <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 transition-opacity duration-300 opacity-0 pointer-events-none">
+        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-4xl w-11/12 relative transform scale-95 transition-transform duration-300 modal-content-wrapper">
+            <!-- Tombol Tutup -->
+            <button onclick="closeZoomedImage()" class="absolute top-[-10px] right-[-10px] text-white bg-red-600 hover:bg-red-700 rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold p-1 shadow-xl border-2 border-white">
+                &times;
+            </button>
+            <div class="p-2">
+                <h2 id="modalFoodTitle" class="text-2xl font-bold text-primary mb-4 text-center border-b pb-2"></h2>
+                <!-- Gambar yang di-zoom -->
+                <img id="modalImage" src="" alt="Zoomed Food Image" class="w-full h-auto object-contain rounded-lg shadow-inner">
             </div>
         </div>
-
-        <!-- Grid Container -->
-        <div id="recipeGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            <!-- Cards will be injected here via JS -->
-        </div>
-
-        <!-- Empty State -->
-        <div id="emptyState" class="hidden flex flex-col items-center justify-center py-20 text-center">
-            <i data-lucide="search-x" class="w-16 h-16 text-slate-300 mb-4"></i>
-            <h3 class="text-lg font-medium text-slate-900">Tidak ditemukan</h3>
-            <p class="text-slate-500">Coba kata kunci lain.</p>
-        </div>
-    </main>
-
-    <!-- Toast Notification -->
-    <div id="toast" class="fixed bottom-5 right-5 transform translate-y-20 opacity-0 transition-all duration-300 z-50 bg-slate-800 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3">
-        <i data-lucide="check-circle" class="w-5 h-5 text-green-400"></i>
-        <span>Teks berhasil disalin!</span>
     </div>
 
     <script>
-        // Data Resep (Transkrip dari Gambar)
-        const recipes = [
-            {
-                name: "Seafood Risotto",
-                desc: "Not for people frightened of the sea. Eat too much and you'll be dreaming of the deep sea.",
-                rarity: "Rare",
-                icon: "fish"
-            },
-            {
-                name: "Beef Wellington",
-                desc: "A beast meat dish prepared with an improved recipe. Bear in mind that it has only about a 50% success rate.",
-                rarity: "Delicious",
-                icon: "beef"
-            },
-            {
-                name: "Jumbo Tamagoyaki",
-                desc: "This shockingly large egg roll was specially made for an egg lover.",
-                rarity: "Delicious",
-                icon: "egg"
-            },
-            {
-                name: "Earthy Noodles",
-                desc: "The noodles, made from crushed insect flour, are paired with broth cooked from insect shells. Has the weight of the land itself.",
-                rarity: "Delicious",
-                icon: "utensils"
-            },
-            {
-                name: "Truffle Pie",
-                desc: "Eating this grants the ability to detect hidden underground treasures, but more often than not, it simply leads you to the sewers.",
-                rarity: "Rare",
-                icon: "pie-chart"
-            },
-            {
-                name: "Lightbearer Escargot",
-                desc: "This dish is made with glowing snails and bioluminescent mushrooms. Perfect for night walks.",
-                rarity: "Rare",
-                icon: "snail"
-            },
-            {
-                name: "Elemental Cold Brew",
-                desc: "A mysterious beverage extracted from element crystals at low temperature. It gives your tongue a subtle tingling sensation.",
-                rarity: "Rare",
-                icon: "glass-water"
-            },
-            {
-                name: "Luminous Frappe",
-                desc: "Note: It glows due to magic powder, not radiation.",
-                rarity: "Rare",
-                icon: "ice-cream"
-            },
-            {
-                name: "Mage's Omelet",
-                desc: "It is said to be the signature dish of the Serene Lyceum cafeteria.",
-                rarity: "Rare",
-                icon: "egg-fried"
-            },
-            {
-                name: "Craftsman's Stew",
-                desc: "A traditional dwarven dish, slow-cooked with steam and often eaten during crunch time.",
-                rarity: "Epic",
-                icon: "soup"
-            },
-            {
-                name: "Tropical Skewers",
-                desc: "Each bite bursts with the rich aroma of sea breeze and coconuts, sparking an urge to head straight for a vacation.",
-                rarity: "Delicious",
-                icon: "utensils-crossed"
-            },
-            {
-                name: "Seafood Pancake",
-                desc: "Rumor has it that after eating this pancake, you can effortlessly sing dolphin songs.",
-                rarity: "Rare",
-                icon: "cookie"
-            },
-            {
-                name: "Stardust Souffle",
-                desc: "It's so airy it might float, so be sure to enjoy it indoors.",
-                rarity: "Epic",
-                icon: "cloud"
-            },
-            {
-                name: "Candy Coffee",
-                desc: "Melted into candy, this gummy candy can be stretched infinitely, but it is not advised to try it.",
-                rarity: "Rare",
-                icon: "coffee"
-            },
-            {
-                name: "Beetle Knight Bar",
-                desc: "A convenient protein-packed energy bar. Your go-to snack when hunger strikes.",
-                rarity: "Rare",
-                icon: "candy"
-            },
-            {
-                name: "Mutated Meat Stew",
-                desc: "A nutrient-rich dish, though its flavor is an acquired taste.",
-                rarity: "Rare",
-                icon: "biohazard"
-            },
-            {
-                name: "Meat Omurice",
-                desc: "Made with mysterious beast meat, this dish could give you the runs for a full 24 hours.",
-                rarity: "Delicious",
-                icon: "egg"
-            },
-            {
-                name: "Bug Marinated Taco",
-                desc: "It's completely normal to experience unknown side effects after eating.",
-                rarity: "Delicious",
-                icon: "bug"
-            },
-            {
-                name: "Stuffed Mushroom",
-                desc: "Served in a giant mushroom, this dish is both eco-friendly and delicious. Don't forget to eat the mushroom bowl at the end!",
-                rarity: "Delicious",
-                icon: "carrot"
-            },
-            {
-                name: "Everwinter Parfait",
-                desc: "This ice cream never melts. Best sold wholesale in tropical regions.",
-                rarity: "Rare",
-                icon: "snowflake"
-            },
-            {
-                name: "Bubble Macaron",
-                desc: "The flavor of this perpetually bubbling macaron fades away quickly.",
-                rarity: "Rare",
-                icon: "circle-dot"
-            },
-            {
-                name: "Gnome Platter",
-                desc: "An exquisite snack platter and a must-have at gnome feasts.",
-                rarity: "Epic",
-                icon: "layout-grid"
-            },
-            {
-                name: "Stormy Custard",
-                desc: "When chewed, it releases sparks in your mouth.",
-                rarity: "Rare",
-                icon: "zap"
-            },
-            {
-                name: "Ocean Steamed Egg",
-                desc: "This steamed egg changes color with the phases of the moon. It looks the most stunning during the full moon!",
-                rarity: "Delicious",
-                icon: "moon"
-            },
-            {
-                name: "Bug Jelly",
-                desc: "It never melts, but tends to stick to your teeth when you eat it.",
-                rarity: "Rare",
-                icon: "droplet"
-            },
-            {
-                name: "Arctic Shaved Ice",
-                desc: "This ultra-cold shaved ice will make you question your life choices.",
-                rarity: "Delicious",
-                icon: "thermometer-snowflake"
-            },
-            {
-                name: "Arcane Mille Feuille",
-                desc: "This cake is full of surprises, with each layer holding a different magical effect. Eating is a gamble.",
-                rarity: "Rare",
-                icon: "layers"
-            },
-            {
-                name: "Mountain Stew",
-                desc: "The best comfort food for hikers, best served in the mountains.",
-                rarity: "Delicious",
-                icon: "mountain"
-            },
-            {
-                name: "Mushroom Meat Patty",
-                desc: "Wild beast meat steamed with poisonous mushrooms. Be sure to take an antidote after eating.",
-                rarity: "Rare",
-                icon: "skull"
-            },
-            {
-                name: "Three Treasure Stew",
-                desc: "A nutrient-packed stew of wild mushrooms, wild beast meat, and insects.",
-                rarity: "Delicious",
-                icon: "cooking-pot"
-            },
-            {
-                name: "Bouncy Jelly",
-                desc: "The extremely bouncy jelly is both a delicious treat and a fun toy.",
-                rarity: "Delicious",
-                icon: "activity"
-            },
-            {
-                name: "Elemental Syrup",
-                desc: "This syrup, made from pure element crystals, can instantly restore one's magic.",
-                rarity: "Epic",
-                icon: "flask-conical"
-            },
-            {
-                name: "Dragon Egg Legend",
-                desc: "Despite its name, it contains no real dragon ingredients.",
-                rarity: "Rare",
-                icon: "flame"
-            },
-            {
-                name: "Triverse Balls",
-                desc: "Made with chopped meat from an amphibian, these will wrestle in your mouth.",
-                rarity: "Delicious",
-                icon: "dribbble"
-            },
-            {
-                name: "Adventurer's Stew",
-                desc: "All leftover ingredients go into this stew. The flavor depends entirely on their taste and skill.",
-                rarity: "Delicious",
-                icon: "backpack"
-            },
-            {
-                name: "Energy Soda",
-                desc: "This professional-grade energy drink leaves you feeling supercharged.",
-                rarity: "Rare",
-                icon: "battery-charging"
-            },
-            {
-                name: "Molecular Cuisine",
-                desc: "Looks classy but hardly filling.",
-                rarity: "Rare",
-                icon: "microscope"
-            },
-            {
-                name: "Steamed Sea Monster",
-                desc: "A sea monster delicacy in its purest form, right up the alley of fishermen.",
-                rarity: "Delicious",
-                icon: "waves"
-            },
-            {
-                name: "Healthy Salad",
-                desc: "It is healthy both in reputation and reality.",
-                rarity: "Delicious",
-                icon: "leaf"
-            },
-            {
-                name: "Snow Mushroom Soup",
-                desc: "A hearty soup made with extra mushrooms. Shouldn't... probably won't cause hallucinations.",
-                rarity: "Epic",
-                icon: "wind"
-            },
-            {
-                name: "Victory Roast",
-                desc: "This barbecue is prepared for winners, where every bite tastes like glory!",
-                rarity: "Epic",
-                icon: "trophy"
-            },
-            {
-                name: "Geothermal Hotpot",
-                desc: "The soup is always piping hot. This dish is a staple at every dwarven feast.",
-                rarity: "Rare",
-                icon: "flame-kindling"
-            },
-            {
-                name: "Technician's Sandwich",
-                desc: "Perfect as a quick lunch for technicians, boosting efficiency.",
-                rarity: "Rare",
-                icon: "wrench"
-            },
-            {
-                name: "Fisherman's Sashimi",
-                desc: "Enjoy this super fresh sashimi platter right away, or the seafood might slip away when you are not looking.",
-                rarity: "Delicious",
-                icon: "fish-off"
-            },
-            {
-                name: "Chargrilled Ribs",
-                desc: "Unless you are a big eater, it is recommended to share this massive serving of grilled beast meat with your friends.",
-                rarity: "Rare",
-                icon: "drumstick"
-            },
-            {
-                name: "Arcane Pizza",
-                desc: "Beloved by mages for its exceptional magic-replenishing effects.",
-                rarity: "Epic",
-                icon: "pizza"
-            },
-            {
-                name: "Jumpy Mushroom Tart",
-                desc: "Move really slowly after eating, or you will end up hopping with every step.",
-                rarity: "Rare",
-                icon: "arrow-up-circle"
-            },
-            {
-                name: "Slime Researcher's Jerky",
-                desc: "The jerky that slime researchers adore. Wait, is that what truly draws them to the research?",
-                rarity: "Delicious",
-                icon: "sticky-note"
-            },
-            {
-                name: "Water Element Soup",
-                desc: "This soup tastes as plain as water.",
-                rarity: "Delicious",
-                icon: "droplets"
-            }
+        // Array berisi nama-nama file gambar yang Anda sediakan
+        const imageFiles = [
+            "adventurer's_stew.jpg", "alchemist's_gummy.jpg", "arcane_mille_feuille.jpg", 
+            "arcane_pizza.jpg", "artic_shaved_ice.jpg", "beef_wellington.jpg", 
+            "beetle_knight_bar.jpg", "bouncy_jelly.jpg", "bubble_macaron.jpg", 
+            "bug_jelly.jpg", "bug_marinated_taco.jpg", "candy_coffee.jpg", 
+            "chargilled_ribs.jpg", "craftsman's_stew.jpg", "earthy_noodles.jpg", 
+            "elemental_cold_brew.jpg", "elemental_syrup.jpg", "energy_soda.jpg", 
+            "eternal_canned_meat.jpg", "everwinter_parfait.jpg", "expedition_meal.jpg", 
+            "fisherman's_sashimi.jpg", "fragon_egg_legend.jpg", "garden_mousse.jpg", 
+            "geothermal_hotpot.jpg", "gnome_platter.jpg", "harvest_feast.jpg", 
+            "healty_salad.jpg", "jumbo_tamagoyaki.jpg", "jumpy_mushroom_tart.jpg", 
+            "lightbearer_escargot.jpg", "luminous_frappe.jpg", "mage's_omelet.jpg", 
+            "magic_lava_cake.jpg", "meat_omurice.jpg", "molecular_cuisine.jpg", 
+            "mountain_stew.jpg", "mushroom_meat_patty.jpg", "mutated_meat_stew.jpg", 
+            "ocean_steamed_egg.jpg", "savior's_sundae.jpg", "seafood_pancake.jpg", 
+            "seafood_risotto.jpg", "slime_researcher's_jerky.jpg", "snow_mushroom_soup.jpg", 
+            "special_mushroom_candy.jpg", "stardust_souffle.jpg", "steamed_sea_monster.jpg", 
+            "stormy_custard.jpg", "stuffed_mushroom.jpg", "survivor's_ration.jpg", 
+            "tangy_worm_pudding.jpg", "technician's_sandwich.jpg", "three_treasure_stew.jpg", 
+            "triverse_balls.jpg", "tropical_skewers.jpg", "truffle_pie.jpg", 
+            "victory_roast.jpg", "water_element_soup.jpg", "wisdom_course.jpg"
         ];
 
-        const grid = document.getElementById('recipeGrid');
+        const foodGallery = document.getElementById('foodGallery');
         const searchInput = document.getElementById('searchInput');
-        const countSpan = document.getElementById('count');
-        const emptyState = document.getElementById('emptyState');
-        const toast = document.getElementById('toast');
+        const noResultsMessage = document.getElementById('noResults');
+        
+        // Elemen Modal
+        const imageModal = document.getElementById('imageModal');
+        const modalImage = document.getElementById('modalImage');
+        const modalFoodTitle = document.getElementById('modalFoodTitle');
 
-        // Fungsi Render Kartu
-        function renderRecipes(data) {
-            grid.innerHTML = '';
-            countSpan.textContent = data.length;
 
-            if (data.length === 0) {
-                emptyState.classList.remove('hidden');
-                return;
-            } else {
-                emptyState.classList.add('hidden');
-            }
-
-            data.forEach(item => {
-                const rarityClass = `rarity-${item.rarity.toLowerCase()}`;
-                
-                const card = document.createElement('div');
-                card.className = 'card-hover bg-white rounded-xl overflow-hidden border border-slate-200 flex flex-col h-full transition-all duration-300';
-                
-                card.innerHTML = `
-                    <div class="p-5 flex flex-col h-full relative">
-                        <!-- Header: Icon & Rarity -->
-                        <div class="flex justify-between items-start mb-3">
-                            <div class="p-2 bg-slate-100 rounded-lg">
-                                <i data-lucide="${item.icon}" class="w-6 h-6 text-slate-600"></i>
-                            </div>
-                            <span class="text-xs font-bold px-2 py-1 rounded-full ${rarityClass}">
-                                ${item.rarity}
-                            </span>
-                        </div>
-
-                        <!-- Content -->
-                        <h3 class="text-lg font-bold text-slate-900 mb-2 leading-tight">${item.name}</h3>
-                        <p class="text-sm text-slate-500 mb-4 flex-grow">${item.desc}</p>
-
-                        <!-- Footer: Ingredients Placeholder & Copy Button -->
-                        <div class="pt-4 border-t border-slate-100 flex items-center justify-between mt-auto">
-                            <div class="flex -space-x-2 overflow-hidden">
-                                <!-- Dummy Ingredient Icons -->
-                                <div class="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-slate-200 flex items-center justify-center text-[10px] text-slate-500">?</div>
-                                <div class="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-slate-200 flex items-center justify-center text-[10px] text-slate-500">?</div>
-                                <div class="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-slate-200 flex items-center justify-center text-[10px] text-slate-500">?</div>
-                            </div>
-                            
-                            <button onclick="copyToClipboard('${item.name}', '${item.desc}')" 
-                                class="flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-orange-600 transition-colors px-2 py-1 rounded hover:bg-orange-50">
-                                <i data-lucide="copy" class="w-4 h-4"></i>
-                                Copy
-                            </button>
-                        </div>
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
+        /**
+         * Menampilkan modal gambar yang di-zoom.
+         * @param {string} imageUrl Path gambar relatif
+         * @param {string} foodName Nama makanan yang diformat
+         */
+        function showZoomedImage(imageUrl, foodName) {
+            // Set sumber gambar dan judul di modal
+            modalImage.src = imageUrl;
+            modalFoodTitle.textContent = foodName;
             
-            // Pengecekan keamanan: jalankan createIcons hanya jika perpustakaan sudah dimuat
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            }
-        }
-
-        // Fungsi Copy
-        function copyToClipboard(name, desc) {
-            const textToCopy = `**${name}**\n${desc}`;
+            // Fallback jika gambar asli tidak ditemukan
+            const fallbackPlaceholder = `https://placehold.co/600x400/94a3b8/ffffff?text=${encodeURIComponent(foodName.replace(/ /g, '\n'))}`;
+            modalImage.onerror = () => {
+                modalImage.src = fallbackPlaceholder;
+                modalFoodTitle.textContent = `${foodName} (Gambar Tidak Ditemukan)`;
+            };
             
-            // Modern clipboard API
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(textToCopy).then(() => showToast());
-            } else {
-                // Fallback for older browsers or iframes without clipboard perm
-                const textArea = document.createElement("textarea");
-                textArea.value = textToCopy;
-                textArea.style.position = "fixed";
-                textArea.style.left = "-9999px";
-                document.body.appendChild(textArea);
-                textArea.focus();
-                textArea.select();
-                try {
-                    document.execCommand('copy');
-                    showToast();
-                } catch (err) {
-                    console.error('Unable to copy', err);
-                }
-                document.body.removeChild(textArea);
+            // Tampilkan modal dengan transisi
+            imageModal.classList.remove('opacity-0', 'pointer-events-none');
+            imageModal.classList.add('opacity-100');
+            // Untuk memastikan transform diterapkan pada item konten modal
+            document.querySelector('#imageModal > div').classList.remove('scale-95');
+            document.querySelector('#imageModal > div').classList.add('scale-100');
+        }
+
+        /**
+         * Menyembunyikan modal gambar.
+         */
+        window.closeZoomedImage = function() {
+            // Sembunyikan modal dengan transisi
+            imageModal.classList.remove('opacity-100');
+            imageModal.classList.add('opacity-0', 'pointer-events-none');
+            document.querySelector('#imageModal > div').classList.remove('scale-100');
+            document.querySelector('#imageModal > div').classList.add('scale-95');
+        }
+        
+        // Tutup modal ketika mengklik di luar gambar
+        imageModal.addEventListener('click', (e) => {
+            // Tutup hanya jika klik dilakukan pada background modal, bukan konten di dalamnya
+            if (e.target === imageModal) {
+                closeZoomedImage();
             }
-        }
-
-        function showToast() {
-            toast.classList.remove('translate-y-20', 'opacity-0');
-            setTimeout(() => {
-                toast.classList.add('translate-y-20', 'opacity-0');
-            }, 2500);
-        }
-
-        // Fungsi Search Filter
-        searchInput.addEventListener('input', (e) => {
-            const searchTerm = e.target.value.toLowerCase();
-            const filteredData = recipes.filter(item => 
-                item.name.toLowerCase().includes(searchTerm) || 
-                item.desc.toLowerCase().includes(searchTerm) ||
-                item.rarity.toLowerCase().includes(searchTerm)
-            );
-            renderRecipes(filteredData);
-        });
-
-        // Initial Render
-        // Kita juga menambahkan listener untuk memastikan script berjalan setelah halaman siap
-        document.addEventListener('DOMContentLoaded', () => {
-             renderRecipes(recipes);
         });
         
-        // Fallback jika DOM sudah ready
-        if (document.readyState === 'complete' || document.readyState === 'interactive') {
-             renderRecipes(recipes);
+        // Tutup modal ketika menekan tombol ESC
+        document.addEventListener('keydown', (e) => {
+            // Cek apakah modal sedang aktif (opacity-100)
+            if (e.key === 'Escape' && imageModal.classList.contains('opacity-100')) {
+                closeZoomedImage();
+            }
+        });
+
+        /**
+         * Mengubah nama file menjadi format nama makanan yang mudah dibaca.
+         * Contoh: "adventurer's_stew.jpg" menjadi "Adventurer's Stew"
+         * @param {string} filename Nama file gambar
+         * @returns {string} Nama makanan yang diformat
+         */
+        function formatFoodName(filename) {
+            // Hapus ekstensi .jpg
+            let name = filename.replace(/\.jpg$/i, '');
+            // Ganti underscore dengan spasi
+            name = name.replace(/_/g, ' ');
+            // Kapitalisasi huruf pertama setiap kata (kecuali kata-kata tertentu seperti 'a', 'the', 'of', dll.)
+            name = name.toLowerCase().split(' ').map(word => {
+                if (word.length > 0) {
+                    return word.charAt(0).toUpperCase() + word.slice(1);
+                }
+                return word;
+            }).join(' ');
+            return name;
         }
+
+        /**
+         * Membuat elemen card HTML untuk satu item makanan.
+         * @param {string} filename Nama file asli
+         * @param {string} formattedName Nama makanan yang diformat
+         * @returns {string} String HTML dari card
+         */
+        function createFoodCard(filename, formattedName) {
+            // Path relatif ke folder images/ (sesuai permintaan user)
+            const imageUrl = `images/${filename}`;
+            
+            // URL placeholder yang menggunakan nama file sebagai teks (sebagai fallback jika gambar tidak ditemukan)
+            const fallbackPlaceholder = `https://placehold.co/300x200/94a3b8/ffffff?text=Image+Missing`;
+
+            // Mengganti tanda kutip tunggal dalam nama makanan untuk mencegah error JavaScript
+            // Contoh: "Adventurer's Stew" menjadi "Adventurer\'s Stew"
+            const safeFormattedName = formattedName.replace(/'/g, "\\'");
+            
+            return `
+                <div class="food-card bg-card-bg rounded-xl shadow-md overflow-hidden transform hover:shadow-xl">
+                    <!-- Menggunakan path relatif ke folder images/ -->
+                    <img src="${imageUrl}" 
+                         alt="${formattedName}" 
+                         class="w-full h-32 object-cover"
+                         onerror="this.onerror=null; this.src='${fallbackPlaceholder}'">
+                    
+                    <div class="p-4 text-center">
+                        <h3 class="text-lg font-semibold text-gray-800 break-words">${formattedName}</h3>
+                        <p class="text-sm text-gray-400 mt-1">${filename}</p>
+                        <button onclick="showZoomedImage('${imageUrl}', '${safeFormattedName}')" class="mt-3 w-full bg-secondary text-white py-2 px-4 rounded-lg hover:bg-emerald-600 transition duration-150 text-sm font-medium shadow-md shadow-secondary/50">
+                            Lihat Detail
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        /**
+         * Merender daftar card berdasarkan filter pencarian.
+         * @param {string} filter Teks pencarian
+         */
+        function renderFoodGallery(filter = '') {
+            const lowerCaseFilter = filter.toLowerCase().trim();
+            let cardsHtml = '';
+            let resultsCount = 0;
+
+            imageFiles.forEach(file => {
+                const formattedName = formatFoodName(file);
+                // Cek apakah nama file atau nama yang diformat mengandung teks pencarian
+                if (file.toLowerCase().includes(lowerCaseFilter) || formattedName.toLowerCase().includes(lowerCaseFilter)) {
+                    cardsHtml += createFoodCard(file, formattedName);
+                    resultsCount++;
+                }
+            });
+
+            foodGallery.innerHTML = cardsHtml;
+
+            // Tampilkan atau sembunyikan pesan 'Tidak ditemukan hasil'
+            if (resultsCount === 0 && lowerCaseFilter.length > 0) {
+                noResultsMessage.style.display = 'block';
+            } else {
+                noResultsMessage.style.display = 'none';
+            }
+        }
+
+        // Event listener untuk input pencarian
+        searchInput.addEventListener('input', (e) => {
+            renderFoodGallery(e.target.value);
+        });
+
+        // Panggil renderGallery saat halaman dimuat untuk menampilkan semua item
+        renderFoodGallery();
 
     </script>
 </body>
